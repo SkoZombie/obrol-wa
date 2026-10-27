@@ -333,6 +333,7 @@ var enStrings = map[string]string{
 	"tampilkan versi":                               "show version",
 	"tulis ikon PNG bawaan ke path ini lalu keluar": "write default PNG icon to path and exit",
 	"tidak bisa membuat folder data:":               "can't create data folder:",
+	"Ukuran font":                                   "Font size",
 
 	// QR login instructions
 	"1.  Buka <b>WhatsApp</b> di ponsel\n" +

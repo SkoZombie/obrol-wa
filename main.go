@@ -39,7 +39,8 @@ type Config struct {
 	CloseToTray bool   `json:"close_to_tray"`
 	MuteGroups  bool   `json:"mute_groups"`
 	Theme       string `json:"theme"` // auto | light | dark
-	Lang        string `json:"lang"`  // id | en
+	FontScale   int    `json:"font_scale"`
+	Lang        string `json:"lang"` // id | en
 	path        string
 }
 

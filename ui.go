@@ -45,12 +45,13 @@ type metaRef struct {
 }
 
 type App struct {
-	gapp *gtk.Application
-	win  *gtk.ApplicationWindow
-	wa   *WA
-	st   *Store
-	cfg  *Config
-	opts Options
+	gapp         *gtk.Application
+	win          *gtk.ApplicationWindow
+	wa           *WA
+	st           *Store
+	cfg          *Config
+	opts         Options
+	origFontName string // Track the original font name when loading CSS so we can scale it
 
 	header *gtk.HeaderBar
 	pages  *gtk.Stack
@@ -417,6 +418,11 @@ func (a *App) loadCSS() {
 
 	if set, err := gtk.SettingsGetDefault(); err == nil {
 		a.settings = set
+		if v, err := set.GetProperty("gtk-font-name"); err == nil {
+			a.origFontName, _ = v.(string)
+		}
+		a.applyFontScale()
+
 		if v, err := set.GetProperty("gtk-application-prefer-dark-theme"); err == nil {
 			a.origPreferDark, _ = v.(bool)
 		}
@@ -446,6 +452,24 @@ func (a *App) systemDark() bool {
 		}
 	}
 	return false
+}
+
+func (a *App) applyFontScale() {
+	if a.settings == nil || a.origFontName == "" {
+		return
+	}
+
+	font := pango.FontDescriptionFromString(a.origFontName)
+	size := float64(font.GetSize()) * float64(a.cfg.FontScale) / 100
+
+	if font.GetSizeIsAbsolute() {
+		font.SetAbsoluteSize(size)
+	} else {
+		font.SetSize(int(size + 0.5)) //  Ensure we round up
+	}
+
+	// Apply the new scaled font to GTK
+	a.settings.SetProperty("gtk-font-name", font.ToString())
 }
 
 func (a *App) applyTheme() {
@@ -548,6 +572,37 @@ func (a *App) buildHeaderButtons() {
 	}
 	themeItem.SetSubmenu(themeMenu)
 	menu.Append(themeItem)
+
+	// Add font scaling submenu
+	fontItem, _ := gtk.MenuItemNewWithLabel(T("Ukuran font"))
+	fontMenu, _ := gtk.MenuNew()
+	var fontFirst *gtk.RadioMenuItem
+
+	for _, percent := range []int{100, 150, 200} {
+		var it *gtk.RadioMenuItem
+		label := fmt.Sprintf("%d%%", percent)
+
+		if fontFirst == nil {
+			it, _ = gtk.RadioMenuItemNewWithLabel(nil, label)
+			fontFirst = it
+		} else {
+			it, _ = gtk.RadioMenuItemNewWithLabelFromWidget(fontFirst, label)
+		}
+
+		it.SetActive(a.cfg.FontScale == percent)
+		it.Connect("toggled", func() {
+			if it.GetActive() {
+				a.cfg.FontScale = percent
+				a.cfg.Save()
+				a.applyFontScale()
+			}
+		})
+		fontMenu.Append(it)
+	}
+
+	fontItem.SetSubmenu(fontMenu)
+	menu.Append(fontItem)
+
 	langItem, _ := gtk.MenuItemNewWithLabel(T("Bahasa"))
 	langMenu, _ := gtk.MenuNew()
 	var lfirst *gtk.RadioMenuItem
