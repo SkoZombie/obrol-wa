@@ -45,13 +45,16 @@ type metaRef struct {
 }
 
 type App struct {
-	gapp         *gtk.Application
-	win          *gtk.ApplicationWindow
-	wa           *WA
-	st           *Store
-	cfg          *Config
-	opts         Options
-	origFontName string // Track the original font name when loading CSS so we can scale it
+	gapp    *gtk.Application
+	win     *gtk.ApplicationWindow
+	wa      *WA
+	st      *Store
+	cfg     *Config
+	opts    Options
+	fontCSS *gtk.CssProvider // CSS for the app so we can apply font scaling
+
+	// Track Icon sizes for scaling so they can be various sizes
+	iconSizes map[*Icon]int
 
 	header *gtk.HeaderBar
 	pages  *gtk.Stack
@@ -175,6 +178,8 @@ func (a *App) Activate() {
 	a.buildHeaderButtons()
 
 	a.pages, _ = gtk.StackNew()
+	addClass(a.pages, "scaled-content")
+
 	a.pages.SetTransitionType(gtk.STACK_TRANSITION_TYPE_CROSSFADE)
 	a.pages.AddNamed(a.buildLogin(), "login")
 	a.pages.AddNamed(a.buildMain(), "main")
@@ -418,9 +423,8 @@ func (a *App) loadCSS() {
 
 	if set, err := gtk.SettingsGetDefault(); err == nil {
 		a.settings = set
-		if v, err := set.GetProperty("gtk-font-name"); err == nil {
-			a.origFontName, _ = v.(string)
-		}
+		a.fontCSS, _ = gtk.CssProviderNew()
+		gtk.AddProviderForScreen(screen, a.fontCSS, gtk.STYLE_PROVIDER_PRIORITY_APPLICATION+2)
 		a.applyFontScale()
 
 		if v, err := set.GetProperty("gtk-application-prefer-dark-theme"); err == nil {
@@ -455,21 +459,20 @@ func (a *App) systemDark() bool {
 }
 
 func (a *App) applyFontScale() {
-	if a.settings == nil || a.origFontName == "" {
+	if a.settings == nil || a.fontCSS == nil {
 		return
 	}
 
-	font := pango.FontDescriptionFromString(a.origFontName)
-	size := float64(font.GetSize()) * float64(a.cfg.FontScale) / 100
+	percent := normaliseScaling(a.cfg.FontScale)
 
-	if font.GetSizeIsAbsolute() {
-		font.SetAbsoluteSize(size)
-	} else {
-		font.SetSize(int(size + 0.5)) //  Ensure we round up
+	for ic, baseSize := range a.iconSizes {
+		ic.SetSize((baseSize*percent + 50) / 100)
 	}
 
-	// Apply the new scaled font to GTK
-	a.settings.SetProperty("gtk-font-name", font.ToString())
+	a.fontCSS.LoadFromData(fmt.Sprintf(
+		".scaled-content { font-size: %d%%; }",
+		percent,
+	))
 }
 
 func (a *App) applyTheme() {
@@ -511,7 +514,7 @@ func addClass(w interface {
 // ------------------------------------------------------------ header
 
 func (a *App) buildHeaderButtons() {
-	newBtn := iconButton("chat-new", T("Obrolan baru (Ctrl+N)"), 18)
+	newBtn := a.iconButton("chat-new", T("Obrolan baru (Ctrl+N)"), 18)
 	newBtn.SetRelief(gtk.RELIEF_NORMAL)
 	newBtn.Connect("clicked", a.newChatDialog)
 	a.header.PackStart(newBtn)

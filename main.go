@@ -52,6 +52,16 @@ func loadConfig(dir string) *Config {
 	return c
 }
 
+func normaliseScaling(percent int) int {
+	switch percent {
+	case 100, 150, 200:
+	default:
+		percent = 100
+	}
+
+	return percent
+}
+
 func (c *Config) Save() {
 	b, _ := json.MarshalIndent(c, "", "  ")
 	os.WriteFile(c.path, b, 0o600)

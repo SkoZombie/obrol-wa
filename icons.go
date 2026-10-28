@@ -92,10 +92,30 @@ func (ic *Icon) SetName(name string) {
 	}
 }
 
+func (ic *Icon) SetSize(size int) {
+	if ic.size != size {
+		ic.size = size
+		ic.SetSizeRequest(size, size)
+		ic.QueueDraw()
+	}
+}
+
 // iconButton: tombol datar berisi ikon.
-func iconButton(name, tooltip string, size int) *gtk.Button {
+// It's now part of the app so it can track sizes
+func (a *App) iconButton(name, tooltip string, size int) *gtk.Button {
 	b, _ := gtk.ButtonNew()
-	b.Add(newIcon(name, size))
+	ic := newIcon(name, size)
+
+	// Track the icon's size in a map, and scale it based on our global scalling
+	if a.iconSizes == nil {
+		a.iconSizes = make(map[*Icon]int)
+	}
+	a.iconSizes[ic] = size
+
+	percent := normaliseScaling(a.cfg.FontScale)
+	ic.SetSize((size*percent + 50) / 100)
+
+	b.Add(ic)
 	b.SetRelief(gtk.RELIEF_NONE)
 	b.SetTooltipText(tooltip)
 	b.SetVAlign(gtk.ALIGN_CENTER)

@@ -34,7 +34,7 @@ func (a *App) buildComposer() gtk.IWidget {
 	a.editLbl, _ = gtk.LabelNew("")
 	a.editLbl.SetXAlign(0)
 	a.editLbl.SetEllipsize(pango.ELLIPSIZE_END)
-	x := iconButton("close", T("Batal edit (Esc)"), 16)
+	x := a.iconButton("close", T("Batal edit (Esc)"), 16)
 	x.Connect("clicked", a.cancelEdit)
 	a.editBar.PackStart(ic, false, false, 0)
 	a.editBar.PackStart(a.editLbl, true, true, 0)
@@ -53,7 +53,7 @@ func (a *App) buildComposer() gtk.IWidget {
 	a.replyLbl, _ = gtk.LabelNew("")
 	a.replyLbl.SetXAlign(0)
 	a.replyLbl.SetEllipsize(pango.ELLIPSIZE_END)
-	rx := iconButton("close", T("Batal membalas (Esc)"), 16)
+	rx := a.iconButton("close", T("Batal membalas (Esc)"), 16)
 	rx.Connect("clicked", a.cancelReply)
 	a.replyBar.PackStart(ric, false, false, 0)
 	a.replyBar.PackStart(a.replyLbl, true, true, 0)
@@ -66,18 +66,18 @@ func (a *App) buildComposer() gtk.IWidget {
 	comp, _ := gtk.BoxNew(gtk.ORIENTATION_HORIZONTAL, 4)
 	addClass(comp, "composer")
 
-	attach := iconButton("attach", T("Kirim foto / file"), 20)
+	attach := a.iconButton("attach", T("Kirim foto / file"), 20)
 	attach.SetVAlign(gtk.ALIGN_END)
 	attach.Connect("clicked", a.attachFile)
 
-	emoji := iconButton("emoji", "Emoji (Ctrl+.)", 20)
+	emoji := a.iconButton("emoji", "Emoji (Ctrl+.)", 20)
 	emoji.SetVAlign(gtk.ALIGN_END)
 	emoji.Connect("clicked", func() {
 		a.input.GrabFocus()
 		a.input.Emit("insert-emoji", glib.TYPE_NONE)
 	})
 
-	mic := iconButton("mic", T("Rekam pesan suara"), 20)
+	mic := a.iconButton("mic", T("Rekam pesan suara"), 20)
 	mic.SetVAlign(gtk.ALIGN_END)
 	mic.Connect("clicked", func() { a.toggleRec() })
 	a.micBtn = mic
@@ -115,7 +115,7 @@ func (a *App) buildComposer() gtk.IWidget {
 	})
 	a.input.Connect("key-press-event", a.onInputKey)
 
-	send := iconButton("send", T("Kirim (Enter)"), 18)
+	send := a.iconButton("send", T("Kirim (Enter)"), 18)
 	send.SetRelief(gtk.RELIEF_NORMAL)
 	addClass(send, "sendbtn")
 	send.SetVAlign(gtk.ALIGN_END)
